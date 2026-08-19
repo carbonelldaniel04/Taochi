@@ -1,0 +1,123 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Safety Net (default deny catch-all)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Global Safety and Identity Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == "carbonelldaniel04@gmail.com" ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // 3. Standalone Validation Helpers for security blueprints (No DB reads inside)
+    function isValidWork(data) {
+      return data.keys().hasAll(['title', 'imageUrl', 'category'])
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 200
+        && data.imageUrl is string && data.imageUrl.size() > 0 && data.imageUrl.size() <= 2000
+        && data.category is string && data.category in ["Viviendas", "Comerciales", "Ampliaciones", "Remodelaciones"]
+        && (!('videoUrl' in data) || (data.videoUrl is string && data.videoUrl.size() <= 2000))
+        && (!('location' in data) || (data.location is string && data.location.size() <= 200))
+        && (!('date' in data) || (data.date is string && data.date.size() <= 100))
+        && (!('featured' in data) || (data.featured is bool));
+    }
+
+    function isValidTestimonial(data) {
+      return data.keys().hasAll(['name', 'review', 'rating'])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.review is string && data.review.size() > 0 && data.review.size() <= 1000
+        && (data.rating is int || data.rating is float) && data.rating >= 1 && data.rating <= 5
+        && (!('photoUrl' in data) || (data.photoUrl is string && data.photoUrl.size() <= 2000))
+        && (!('videoUrl' in data) || (data.videoUrl is string && data.videoUrl.size() <= 2000))
+        && (!('projectTitle' in data) || (data.projectTitle is string && data.projectTitle.size() <= 200));
+    }
+
+    function isValidWebContent(data) {
+      return data.keys().hasAll(['heroHeadline', 'heroSubheadline'])
+        && data.heroHeadline is string && data.heroHeadline.size() >= 0 && data.heroHeadline.size() <= 500
+        && data.heroSubheadline is string && data.heroSubheadline.size() >= 0 && data.heroSubheadline.size() <= 1000
+        && (!('heroVideoUrl' in data) || (data.heroVideoUrl is string && data.heroVideoUrl.size() <= 2000))
+        && (!('heroImageUrl' in data) || (data.heroImageUrl is string && data.heroImageUrl.size() <= 2000))
+        && (!('heroType' in data) || (data.heroType is string && data.heroType in ["video", "image"]))
+        && (!('aboutText' in data) || (data.aboutText is string && data.aboutText.size() <= 5000))
+        && (!('whatsappNumber' in data) || (data.whatsappNumber is string && data.whatsappNumber.size() <= 50))
+        && (!('whatsappMessage' in data) || (data.whatsappMessage is string && data.whatsappMessage.size() <= 500))
+        && (!('instagramUrl' in data) || (data.instagramUrl is string && data.instagramUrl.size() <= 500))
+        && (!('n8nWebhookUrl' in data) || (data.n8nWebhookUrl is string && data.n8nWebhookUrl.size() <= 2000))
+        && (!('aiSystemInstruction' in data) || (data.aiSystemInstruction is string && data.aiSystemInstruction.size() <= 10000))
+        && (!('statsCompletedWorks' in data) || (data.statsCompletedWorks is string && data.statsCompletedWorks.size() <= 50))
+        && (!('statsYearsExperience' in data) || (data.statsYearsExperience is string && data.statsYearsExperience.size() <= 50))
+        && (!('statsSatisfiedClients' in data) || (data.statsSatisfiedClients is string && data.statsSatisfiedClients.size() <= 50));
+    }
+
+    function isValidBudgetRequest(data) {
+      return data.keys().hasAll(['nombre', 'telefono', 'email', 'localidad', 'mensaje', 'status', 'createdAt'])
+        && data.nombre is string && data.nombre.size() > 0 && data.nombre.size() <= 100
+        && data.telefono is string && data.telefono.size() > 0 && data.telefono.size() <= 50
+        && data.email is string && data.email.size() > 0 && data.email.size() <= 100
+        && data.localidad is string && data.localidad.size() > 0 && data.localidad.size() <= 100
+        && data.mensaje is string && data.mensaje.size() > 0 && data.mensaje.size() <= 2000
+        && data.status is string && data.status in ["Pendiente", "En Contacto", "Presupuestado", "Rechazado"]
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 2000))
+        && (data.createdAt is string || data.createdAt is timestamp);
+    }
+
+    // 4. Matches for each collection
+    match /works/{workId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidId(workId) && isValidWork(incoming());
+      allow update: if isAdmin() && isValidId(workId) && isValidWork(incoming()) && (!('createdAt' in existing()) || incoming().createdAt == existing().createdAt);
+      allow delete: if isAdmin() && isValidId(workId);
+    }
+
+    match /testimonials/{testimonialId} {
+      allow read: if true;
+      allow create: if isValidId(testimonialId) && isValidTestimonial(incoming());
+      allow update: if isAdmin() && isValidId(testimonialId) && isValidTestimonial(incoming());
+      allow delete: if isAdmin() && isValidId(testimonialId);
+    }
+
+    match /webContent/{contentId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidId(contentId) && isValidWebContent(incoming());
+      allow delete: if isAdmin() && isValidId(contentId);
+    }
+
+    match /budgetRequests/{budgetId} {
+      allow create: if isValidId(budgetId) && isValidBudgetRequest(incoming()) && incoming().status == "Pendiente";
+      allow read: if isAdmin();
+      allow update: if isAdmin() && isValidId(budgetId) && isValidBudgetRequest(incoming());
+      allow delete: if isAdmin() && isValidId(budgetId);
+    }
+
+    match /admins/{adminId} {
+      allow get, list: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "TAO-CHI Servicio Integral",
+  "description": "Web institucional premium y panel administrativo para la empresa constructora líder en Steel Frame.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

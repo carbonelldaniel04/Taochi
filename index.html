@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Google AI Studio App</title>
+    <script>
+      // Suppress Vite HMR and WebSocket errors in the sandboxed preview environment
+      (function() {
+        const suppress = (msg) => {
+          return msg && (
+            msg.toLowerCase().includes('websocket') || 
+            msg.toLowerCase().includes('vite') || 
+            msg.toLowerCase().includes('connection closed') ||
+            msg.toLowerCase().includes('closed before')
+          );
+        };
+
+        window.addEventListener('unhandledrejection', function(event) {
+          const reason = event.reason?.message || String(event.reason || '');
+          if (suppress(reason)) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+        }, true);
+
+        window.addEventListener('error', function(event) {
+          const msg = event.message || '';
+          if (suppress(msg)) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+        }, true);
+
+        // Intercept WebSocket if it's pointing to the Vite dev server HMR
+        const OriginalWebSocket = window.WebSocket;
+        if (OriginalWebSocket) {
+          window.WebSocket = function(url, protocols) {
+            const isViteHMR = typeof url === 'string' && (
+              url.includes('/vite') || 
+              url.includes('ws://' + window.location.host) || 
+              url.includes('wss://' + window.location.host)
+            );
+            if (isViteHMR) {
+              console.log('Intercepted Vite HMR WebSocket connection to prevent background browser errors.');
+              // Return a dummy WebSocket-like object that doesn't crash or throw
+              return {
+                addEventListener: () => {},
+                removeEventListener: () => {},
+                send: () => {},
+                close: () => {},
+                readyState: 3, // CLOSED
+                url: url,
+                onopen: null,
+                onclose: null,
+                onerror: null,
+                onmessage: null,
+              };
+            }
+            return new OriginalWebSocket(url, protocols);
+          };
+          window.WebSocket.prototype = OriginalWebSocket.prototype;
+          for (let key in OriginalWebSocket) {
+            if (Object.prototype.hasOwnProperty.call(OriginalWebSocket, key)) {
+              window.WebSocket[key] = OriginalWebSocket[key];
+            }
+          }
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

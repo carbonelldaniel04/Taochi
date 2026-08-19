@@ -1,0 +1,113 @@
+{
+  "entities": {
+    "Work": {
+      "title": "Obra Realizada",
+      "description": "Detalles de obra/proyecto realizado por la empresa",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "videoUrl": { "type": "string", "description": "Opcional. URL de video cargado por admin" },
+        "category": { "type": "string", "enum": ["Viviendas", "Comerciales", "Ampliaciones", "Remodelaciones"] },
+        "location": { "type": "string" },
+        "date": { "type": "string" },
+        "featured": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "imageUrl", "category"]
+    },
+    "Testimonial": {
+      "title": "Testimonio de Cliente",
+      "description": "Comentarios y calificaciones de clientes satisfechos",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "review": { "type": "string" },
+        "rating": { "type": "number", "description": "Calificación en estrellas (1 a 5)" },
+        "photoUrl": { "type": "string", "description": "Opcional. Foto del cliente" },
+        "videoUrl": { "type": "string", "description": "Opcional. Video testimonial" },
+        "projectTitle": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "review", "rating"]
+    },
+    "WebContent": {
+      "title": "Contenidos de la Web",
+      "description": "Textos y banners editables desde el panel administrativo",
+      "type": "object",
+      "properties": {
+        "heroHeadline": { "type": "string" },
+        "heroSubheadline": { "type": "string" },
+        "heroVideoUrl": { "type": "string" },
+        "heroImageUrl": { "type": "string" },
+        "heroType": { "type": "string", "enum": ["video", "image"] },
+        "aboutText": { "type": "string" },
+        "whatsappNumber": { "type": "string" },
+        "whatsappMessage": { "type": "string" },
+        "instagramUrl": { "type": "string" },
+        "n8nWebhookUrl": { "type": "string" },
+        "aiSystemInstruction": { "type": "string" },
+        "statsCompletedWorks": { "type": "string" },
+        "statsYearsExperience": { "type": "string" },
+        "statsSatisfiedClients": { "type": "string" }
+      },
+      "required": ["heroHeadline", "heroSubheadline"]
+    },
+    "BudgetRequest": {
+      "title": "Solicitud de Presupuesto",
+      "description": "Petición enviada desde el formulario de contacto",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nombre": { "type": "string" },
+        "telefono": { "type": "string" },
+        "email": { "type": "string" },
+        "localidad": { "type": "string" },
+        "mensaje": { "type": "string" },
+        "status": { "type": "string", "enum": ["Pendiente", "En Contacto", "Presupuestado", "Rechazado"] },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["nombre", "telefono", "email", "localidad", "mensaje", "status", "createdAt"]
+    },
+    "Admin": {
+      "title": "Administrador / Personal de la Empresa",
+      "description": "Credenciales y datos de personal autorizado de TAO-CHI",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "UID de Firebase Auth" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "addedBy": { "type": "string" }
+      },
+      "required": ["name", "email", "role"]
+    }
+  },
+  "firestore": {
+    "works": {
+      "schema": "Work",
+      "description": "Galería de proyectos/obras ejecutadas"
+    },
+    "testimonials": {
+      "schema": "Testimonial",
+      "description": "Testimonios de clientes satisfechos con fotos o videos"
+    },
+    "webContent": {
+      "schema": "WebContent",
+      "description": "Contenido editable de la web"
+    },
+    "budgetRequests": {
+      "schema": "BudgetRequest",
+      "description": "Listado de consultas de presupuesto de clientes"
+    },
+    "admins": {
+      "schema": "Admin",
+      "description": "Registro de personal administrador autorizado"
+    }
+  }
+}
